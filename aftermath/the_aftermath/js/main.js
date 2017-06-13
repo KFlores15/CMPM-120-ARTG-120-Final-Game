@@ -357,7 +357,285 @@ Menu.prototype = {
 	// Start game
 	startGame: function() {
 		this.music.stop();
-		game.state.start('Play'); 
+		game.state.start('Intro'); 
+	}
+}
+
+var Intro = function(game) {};
+Intro.prototype = {
+	preload: function() {
+		console.log('Intro: preload');
+    },
+	
+	create: function() {
+		console.log('Intro: create');
+		
+		// Play background sound effect
+		this.music = game.add.audio('Gunfire');
+		this.music.play('', 0, 1, false);
+		
+		// Create fade effect
+		fadeIn = game.add.sprite(0, 0, 'structure');
+		fadeIn.scale.setTo(1000,1000);
+    
+		// Set world bound
+        game.world.setBounds(0, 0, 4000, 1700);
+		
+		// Create background
+		interior = game.add.sprite(-69, 318, "interior");
+        interior.scale.setTo(1.00125, .790588);
+		game.stage.backgroundColor = "fff";
+		
+		// Create introLadder
+        var introLadder1 = game.add.sprite(540,1320, 'ladder');
+        introLadder1.anchor.setTo(.5);
+        var introLadder2 = game.add.sprite(1312,1000, 'ladder');
+        introLadder2.anchor.setTo(.5);
+        
+		// Create introDory
+        introDory = game.add.sprite(327, 1050, 'fMedic');
+        introDory.anchor.setTo(.5);
+        introDory.scale.setTo(.75,.75);
+        game.physics.arcade.enable(introDory);
+        introDory.body.gravity.y = 500;
+        introDory.alpha = 0;
+        
+		// Create ambulance
+        ambulance = game.add.sprite(-256, 1110, 'ambulance');
+        ambulance.anchor.setTo(.5);
+        game.physics.arcade.enable(ambulance);
+		
+		// Create introPatient
+        introPatient = game.add.sprite(1670, 1185, 'patient1');
+        introPatient.enableBody = true;
+        introPatient.anchor.setTo(.5);
+        game.physics.arcade.enable(introPatient);
+        introPatient.body.bounce.y = 0;
+        introPatient.body.gravity.y = 500;
+        introPatient.scale.setTo(.6,.6);
+		
+		// Create introMarlin
+        introMarlin = game.add.sprite(300, 1050, 'mMedic');
+        introMarlin.anchor.setTo(.5);
+        introMarlin.scale.setTo(.75,.75);
+        game.physics.arcade.enable(introMarlin);
+        introMarlin.body.gravity.y = 500; 
+        introMarlin.alpha = 0;
+		
+		// Set camera to introMarlin
+        game.camera.follow(introMarlin);
+		
+		// Animations for paramedic walking and standing
+        introMarlin.animations.add('mWalking', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 12, true);
+        introDory.animations.add('fWalking', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 12, true);
+        introMarlin.animations.add('mStanding', [0], 0, true);
+        introDory.animations.add('fStanding', [0], 0, true);
+		
+		// Create medkit
+        medkit = game.add.sprite(150, 1187, 'medkit');
+        medkit.enableBody = true;
+        game.physics.arcade.enable(medkit);
+        medkit.body.bounce.y = 0;
+        medkit.body.gravity.y = 500;
+        medkit.scale.setTo(.75,.75);
+        medkit.alpha = 0;
+        
+		// Create level
+		this.createLevel();
+		
+		// Create instructions to skip intro
+		var startLabel = game.add.text(700, 575, '[space to skip]', {font: '17px Verdana', fill: '#fff'});
+		startLabel.alpha = 0;
+		game.add.tween(startLabel).to( {alpha: 1}, 1000, Phaser.Easing.Linear.None, true, 0, 1000, true);
+		startLabel.fixedToCamera = true;
+		
+		// Initiate dialogue variables
+        dialogueTimer = 0;
+        dialogueBomb = 0;
+		dialogues = game.add.group();
+	},
+	
+	update: function() {
+		// Create fade effect
+		if (fadeIn.alpha > 0){
+			fadeIn.alpha -= 0.01;
+		}
+		
+		// Bring fadeIn to front
+		game.world.bringToTop(fadeIn);
+		
+		// Set collision physics
+		game.physics.arcade.collide(introMarlin, platforms);
+		game.physics.arcade.collide(introDory, platforms);
+		game.physics.arcade.collide(introPatient, platforms);
+		game.physics.arcade.collide(medkit, platforms);
+		
+		// Start dialogueTimer and dialogueBomb to remove dialogues
+		dialogueTimer ++;
+		if (dialogueTimer == 1){
+			dialogues.callAll('kill');
+			dialogueTimer = 0;			
+		}
+		
+		dialogueBomb ++;
+		if (dialogueBomb == 2){
+			dialogues.callAll('destroy');
+			dialogueBomb = 0;			
+		}
+		
+		// Ambulance drives into scene
+		if (ambulance.x < 256){
+			ambulance.body.velocity.x = 300;
+		}else{
+			ambulance.body.velocity.x = 0;
+			introMarlin.alpha = 1;
+			introDory.alpha = 1;
+		}
+		
+		// Marlin and Dory run to house on the right
+		if (ambulance.x >= 256 && introDory.x < 1710){
+			introMarlin.body.velocity.x = 327;
+			introDory.body.velocity.x = 400;
+			introMarlin.animations.play('mWalking');
+			introDory.animations.play('fWalking');
+			var dialogue = game.add.text(introDory.x - 125, introDory.y - 115, 'I see someone inside the house.', {font: '20px Arial', fill: '#fff'}, dialogues);
+		}
+		
+		// Marlin and Dory stop in front of patient
+		if (introMarlin.x >= 1445 && introDory.x >= 1710){
+			introMarlin.body.velocity.x = 0;
+			introDory.body.velocity.x = 0;
+			introMarlin.frame = 0;
+			introDory.frame = 0;
+			
+			// Dory crouches to heal patient
+			introDory.scale.setTo(-.75,.75);
+			introDory.loadTexture('fCrouching', 0, false);
+			var dialogue = game.add.text(introDory.x - 250, introDory.y - 75, 'She is suffering from internal bleeding. We need the medkit.', {font: '20px Arial', fill: '#fff'}, dialogues);
+			
+			// Timer for conversation before Marlin runs back to ambulance
+			game.time.events.add(Phaser.Timer.SECOND * 2, this.fetchMedkit, this);
+        }
+		
+		// Marlin crouches as bomb goes off
+		if (introMarlin.x <= 470 && introDory.x >= 1710){
+			introMarlin.body.velocity.x = 0;
+			introMarlin.frame = 0;
+			introMarlin.loadTexture('mCrouching', 0, false);
+			
+			medkit.alpha = 1;
+			
+			game.camera.shake(0.005, 500);
+			
+			// Rubble appears after a few seconds
+			game.time.events.add(Phaser.Timer.SECOND * 1, this.rubble, this);
+			game.time.events.add(Phaser.Timer.SECOND * 2, this.switch, this);
+		}
+		
+		// Press SPACEBAR to skip intro
+		if (game.input.keyboard.justPressed(Phaser.Keyboard.SPACEBAR)){
+			this.music.stop();
+			game.state.start('Play'); 
+		}
+	},
+	
+	// Marlin runs back to ambulance
+	fetchMedkit: function(){
+		introMarlin.scale.setTo(-.75,.75);
+		introMarlin.body.velocity.x = -350;
+	},
+	
+	// Create rubble
+	rubble: function(){
+		rubbles = platforms.create(684, 1080, 'rubbles');
+		rubbles.anchor.setTo(.5);
+		rubbles.scale.setTo(.5);
+	},
+
+	// Switch state
+	switch: function(){
+		this.music.stop();
+		game.state.start('Play');
+	},
+	
+	// Create level
+	createLevel: function(){
+		// Create platforms group
+        platforms = game.add.group();
+        platforms.enableBody = true;
+		
+        // Outside
+        ground = platforms.create(-200, 1486, 'structure');
+        ground.anchor.setTo(.5);
+        ground.scale.setTo(18, 15);
+        ground.body.immovable = true;
+        
+        // Sewer
+        ground = platforms.create(2000, 1682, 'structure');
+        ground.anchor.setTo(.5);
+        ground.scale.setTo(125, 1.5);
+        ground.body.immovable = true;
+        
+        // 1st Floor
+        ground = platforms.create(1600, 1260, 'structure');
+        ground.anchor.setTo(.5);
+        ground.scale.setTo(101.5, 1.5);
+        ground.body.immovable = true;
+        
+        ground = platforms.create(3840, 1260, 'structure');
+        ground.anchor.setTo(.5);
+        ground.scale.setTo(10, 1.5);
+        ground.body.immovable = true;
+		
+		wall = platforms.create(3200, 1104, 'structure');
+        wall.anchor.setTo(.5);
+        wall.scale.setTo(1.5, 10);
+        wall.body.immovable = true;
+        
+        // Back wall
+        wall = platforms.create(3968, 784, 'structure');
+        wall.anchor.setTo(.5);
+        wall.scale.setTo(2, 56);
+        wall.body.immovable = true;
+        
+        // 2nd Floor
+        ground = platforms.create(1952, 944, 'structure');
+        ground.anchor.setTo(.5);
+        ground.scale.setTo(82, 1.5);
+        ground.body.immovable = true;
+        
+        ground = platforms.create(3616, 944, 'structure');
+        ground.anchor.setTo(.5);
+        ground.scale.setTo(6, 1.5);
+        ground.body.immovable = true;
+        
+        // 3rd Floor
+        ground = platforms.create(1944, 624, 'structure');
+        ground.anchor.setTo(.5);
+        ground.scale.setTo(80, 1.5);
+        ground.body.immovable = true;
+        
+        ground = platforms.create(3760, 624, 'structure');
+        ground.anchor.setTo(.5);
+        ground.scale.setTo(15, 1.5);
+        ground.body.immovable = true;
+		
+		wall = platforms.create(3200, 448, 'structure');
+        wall.anchor.setTo(.5);
+        wall.scale.setTo(1.5, 12);
+        wall.body.immovable = true;
+        
+        // Front Wall
+        wall = platforms.create(684, 672, 'structure');
+        wall.anchor.setTo(.5);
+        wall.scale.setTo(3, 22);
+        wall.body.immovable = true;
+        
+        // Ceiling
+        ground = platforms.create(2316, 288, 'structure');
+        ground.anchor.setTo(.5);
+        ground.scale.setTo(105, 2);
+        ground.body.immovable = true;
 	}
 }
 
