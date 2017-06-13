@@ -1425,7 +1425,7 @@ Play.prototype = {
 		}
 		if (p1Timer == -50 && p2Timer == -50 && p3Timer == -50 && p4Timer == -50 && MarlinAmbulance && DoryAmbulance){
 			this.music.stop();
-			game.state.start('Menu'); 
+			game.state.start('Ending'); 
 		}
 	},
 	
@@ -1619,4 +1619,267 @@ Play.prototype = {
 		darkness3.anchor.setTo(.5);
 		darkness3.alpha = 1;
 	}
+}
+
+var Ending = function(game) {};
+Ending.prototype = {
+	preload: function() {
+		console.log('Ending: preload');
+	},
+	
+	create: function() {
+		console.log('Ending: create');
+		
+		// Initiate sound effects
+		AssaultRifle = game.add.audio('AssaultRifle');
+		
+		// Loop background music
+		EndingTheme = game.add.audio('EndingTheme');
+		EndingTheme.play('', 0, 1, true);
+		
+		// Create fade effect
+		fadeIn = game.add.sprite(0, 0, 'structure');
+		fadeIn.scale.setTo(1000,1000);
+		
+		// Set world bound
+        game.world.setBounds(0, 0, 4000, 1700);
+		
+		// Create background
+        interior = game.add.sprite(-100, 750, "endingCity");
+        interior.scale.setTo(1.00125, .790588);
+		game.stage.backgroundColor = "fff";
+		
+		// Initiate dialogue variables
+		dialogueTimer = 0;
+		dialogueBomb = 0;
+		speakTimer = 0;
+		dialogues = game.add.group();
+
+		// Initiate event variables
+		cameraTimer = 0;
+		
+		// Create wounded
+        wounded = game.add.sprite(1208, 1565, 'wounded');
+        wounded.enableBody = true;
+        wounded.anchor.setTo(.5);
+        game.physics.arcade.enable(wounded);
+        wounded.body.bounce.y = 0;
+        wounded.body.gravity.y = 500;
+        wounded.scale.setTo(.75,.75);
+		
+		 // Create soldier
+        soldier = game.add.sprite(1600, 1500, 'soldier');
+        soldier.enableBody = true;
+        soldier.anchor.setTo(.5);
+        game.physics.arcade.enable(soldier);
+        soldier.body.bounce.y = 0;
+        soldier.body.gravity.y = 500;
+        soldier.scale.setTo(.75,.8);
+		
+		// Create endingDory
+		endingDory = game.add.sprite(-50, 1565, 'fMedic');
+        endingDory.anchor.setTo(.5);
+        endingDory.scale.setTo(.75,.75);
+        game.physics.arcade.enable(endingDory);
+        endingDory.body.gravity.y = 500;
+		
+		// Create endingMarlin
+        endingMarlin = game.add.sprite(-300, 1465, 'mMedic');
+        endingMarlin.anchor.setTo(.5);
+        endingMarlin.scale.setTo(.75,.75);
+        game.physics.arcade.enable(endingMarlin);
+        endingMarlin.body.gravity.y = 500;
+        game.camera.follow(endingMarlin);
+		
+		// Create level
+		this.createLevel();
+		
+		// Animations for players walking and standing
+        endingMarlin.animations.add('mWalking', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 12, true);
+        endingDory.animations.add('fWalking', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 12, true);
+        endingMarlin.animations.add('mStanding', [0], 0, true);
+        endingDory.animations.add('fStanding', [0], 0, true);
+	},
+	
+	update: function() {
+		// Create fade effect
+		if (fadeIn.alpha > 0){
+			fadeIn.alpha -= 0.01;
+		}
+		
+		// Bring fadeIn to front
+		game.world.bringToTop(fadeIn);
+		
+		// Prevents objects from going through platforms
+		game.physics.arcade.collide(endingMarlin, platforms);
+		game.physics.arcade.collide(endingDory, platforms);
+		game.physics.arcade.collide(wounded, platforms);
+		game.physics.arcade.collide(soldier, platforms);
+		
+		// Start dialogueTimer and dialogueBomb to remove dialogues
+		dialogueTimer ++;
+		if (dialogueTimer == 1){
+			dialogues.callAll('kill');
+			dialogueTimer = 0;	
+		}
+		
+		dialogueBomb ++;
+		if (dialogueBomb == 2){
+			dialogues.callAll('destroy');
+			dialogueBomb = 0;		
+		}
+		
+		// Start speakTimer to add dialogues
+		speakTimer++;
+		
+		// Ending Conversation
+		if(speakTimer >= 50 && speakTimer < 100){
+			var dialogue = game.add.text(400, endingDory.y - 115, 'There is one more injured!', {font: '17px Verdana', fill: '#fff'}, dialogues);
+		}if(speakTimer >= 150 && speakTimer < 250){
+			var dialogue = game.add.text(565, endingMarlin.y - 115, 'Wait!', {font: '17px Verdana', fill: '#fff'}, dialogues);
+		}else if(speakTimer >= 250 && speakTimer < 450){
+			var dialogue = game.add.text(soldier.x - 100, soldier.y - 125, 'Stand back. He is a member', {font: '17px Verdana', fill: '#000'}, dialogues);
+			var dialogue2 = game.add.text(soldier.x - 100, soldier.y - 100, 'of the insurgent.', {font: '17px Verdana', fill: '#000'}, dialogues);
+		}else if(speakTimer >= 450 && speakTimer < 600){
+			var dialogue = game.add.text(endingDory.x - 75, endingDory.y - 75, 'He needs immediate care.', {font: '17px Verdana', fill: '#fff'}, dialogues);
+		}else if(speakTimer >= 600 && speakTimer < 800){
+			var dialogue = game.add.text(soldier.x - 100, soldier.y - 125, 'You are either with us or', {font: '17px Verdana', fill: '#000'}, dialogues);
+			var dialogue2 = game.add.text(soldier.x - 100, soldier.y - 100, 'against us. So stand back.', {font: '17px Verdana', fill: '#000'}, dialogues);
+		}else if(speakTimer >= 800 && speakTimer < 900){
+			var dialogue = game.add.text(endingDory.x - 100, endingDory.y - 75, 'This violence is nonsense!', {font: '17px Verdana', fill: '#fff'}, dialogues);
+		}else if(speakTimer >= 900 && speakTimer < 1000){
+			var dialogue = game.add.text(endingDory.x - 50, endingDory.y - 75, 'He is just a kid.', {font: '17px Verdana', fill: '#fff'}, dialogues);
+		}else if(speakTimer >= 1000 && speakTimer < 1200){
+			var dialogue = game.add.text(endingDory.x - 125, endingDory.y - 75, 'None of us want to take part in this war.', {font: '17px Verdana', fill: '#fff'}, dialogues);
+		}else if(speakTimer >= 1200 && speakTimer < 1300){
+			var dialogue = game.add.text(endingDory.x - 75, endingDory.y - 75, 'Please just let him go.', {font: '17px Verdana', fill: '#fff'}, dialogues);
+		}
+		
+		// endingDory and endingMarlin runs to the right
+		if(endingDory.x < 1075){
+			endingMarlin.body.velocity.x = 350;
+			endingMarlin.animations.play('mWalking');
+			endingDory.body.velocity.x = 450;
+			endingDory.animations.play('fWalking');
+		}
+
+		// Stop at wounded and front door
+		if(endingDory.x >= 1075){
+			cameraTimer ++;
+
+			endingDory.body.velocity.x = 0;
+			endingDory.frame = 0;
+			endingMarlin.body.velocity.x = 0;
+			endingMarlin.frame = 0;
+			endingDory.loadTexture('fCrouching', 0, false); 
+		}
+		
+		// Camera pans over to endingDory
+		if(cameraTimer == 100){
+			game.time.events.add(Phaser.Timer.SECOND * .65, this.close, this);
+		}
+	},
+	
+	// Create level
+	createLevel: function() {
+		// Create platforms
+		platforms = game.add.group();
+        platforms.enableBody = true;
+        
+        // Ground
+        ground = platforms.create(1600, 1680, 'structure');
+        ground.anchor.setTo(.5);
+        ground.scale.setTo(101.5, 1.5);
+        ground.body.immovable = true;
+        
+		// Ceiling
+        ground = platforms.create(3840, 1680, 'structure');
+        ground.anchor.setTo(.5);
+        ground.scale.setTo(10, 1.5);
+        ground.body.immovable = true;
+        
+        // Wall
+        wall = platforms.create(684, 1112, 'structure');
+        wall.anchor.setTo(.5);
+        wall.scale.setTo(3, 22);
+        wall.body.immovable = true;
+	},
+	
+	// Marlin closes door
+	close: function() {
+		if(endingMarlin.x <= 600 && endingDory.x >= 1075){
+			endingDory.body.velocity.x = 0;
+			endingDory.frame = 0;
+			
+			wall = platforms.create(675, 1623, 'structure');
+			wall.anchor.setTo(.5);
+			wall.scale.setTo(1, 10);
+			wall.body.immovable = true;
+			endingMarlin.loadTexture('mCovering', 0, false);
+		}
+		game.time.events.add(Phaser.Timer.SECOND * 16.75, this.shoot, this);
+		game.camera.follow(endingDory);
+	},
+	
+	// Soldier shoots Dory
+	shoot: function() {
+		AssaultRifle.play();
+		endingDory.kill();
+		deadDory = game.add.sprite(1080, 1600, 'fMedicDead');
+		deadDory.scale.setTo(-.9, .9); 
+		game.time.events.add(Phaser.Timer.SECOND * 0.75, this.startCredits, this);
+	},
+	
+	// Start credits and switch state
+	startCredits: function() {
+		game.state.start('Credits'); 
+	}
+}
+
+var Credits = function(game) {};
+Credits.prototype = {
+	preload: function() {
+		console.log('Credits: preload');
+	},
+	
+	create: function() {
+		console.log('Credits: create');
+		
+		// Create fade effect
+		fadeIn = game.add.sprite(0, 0, 'structure');
+		fadeIn.scale.setTo(1000,1000);
+		
+		// Set world bound
+        game.world.setBounds(0, 0, 1500, 600);
+		
+		// Create title credits
+		game.add.sprite(0, 0, 'titleCredits');
+		game.stage.backgroundColor = "000";
+		
+		// Create instruction to restart game
+		var startLabel = game.add.text(675, game.world.height-25, '[press space]', {font: '17px Verdana', fill: '#000'});
+		startLabel.alpha = 0;
+		game.add.tween(startLabel).to( {alpha: 1}, 1000, Phaser.Easing.Linear.None, true, 0, 1000, true);
+	},
+	
+	update: function() {
+		// Create fade effect
+		if (fadeIn.alpha > 0){
+			fadeIn.alpha -= 0.001;
+		}
+		
+		// Bring fadeIn to front
+		game.world.bringToTop(fadeIn);
+		
+		// Press SPACEBAR to start game
+		if (game.input.keyboard.justPressed(Phaser.Keyboard.SPACEBAR)){
+			game.time.events.add(Phaser.Timer.SECOND * .2, this.restart, this);
+		}
+	},
+	
+	// Restart game and switch state
+	restart: function() {
+		EndingTheme.stop();
+		game.state.start('Menu'); 
+	},
 };
